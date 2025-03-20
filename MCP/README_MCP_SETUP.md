@@ -3,7 +3,7 @@ Here's the README in Markdown format (already used in the previous response, but
 ```markdown
 # Unreal Engine MCP Interface
 
-This project provides a Model Context Protocol (MCP) interface for Unreal Engine, enabling seamless integration with Claude Desktop. With this interface, users can interact with Unreal Engine using natural language commands through Claude Desktop, simplifying scene management and object manipulation.
+This project provides a Model Context Protocol (MCP) interface for Unreal Engine, enabling seamless integration with Claude Desktop and Cursor. With this interface, users can interact with Unreal Engine using natural language commands through their preferred AI assistant, simplifying scene management and object manipulation.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ This project provides a Model Context Protocol (MCP) interface for Unreal Engine
 To set up the MCP interface, ensure you have the following:
 
 - **Python 3.7 or newer** installed on your system
-- **Claude Desktop** application
+- **Claude Desktop** application or **Cursor** application
 - **Unreal Engine** with the UnrealMCP plugin enabled
 
 ## Quick Setup
@@ -35,11 +35,27 @@ The setup process is streamlined with a single script that handles all installat
 
 This script will:
 
-- Detect available Python environments (System Python, Miniconda/Anaconda, Claude Desktop environment)
+- Detect available Python environments (System Python, Miniconda/Anaconda, Claude Desktop environment, Cursor environment)
 - Prompt you to choose a Python environment
 - Install the required `mcp` package in the selected environment
 - Generate a `run_unreal_mcp.bat` script tailored to the chosen Python environment
-- Create or update the Claude Desktop configuration file
+- Prompt you to configure Claude Desktop, Cursor, both, or skip configuration
+- Create or update the configuration files for the selected AI assistants
+
+### Command Line Options
+
+The setup script supports the following command line options:
+
+```
+setup_unreal_mcp.bat [OPTIONS]
+
+Options:
+  --help                 Show help message
+  --configure-claude     Configure Claude Desktop (default)
+  --configure-cursor     Configure Cursor
+  --configure-both       Configure both Claude and Cursor
+  --skip-config          Skip configuration
+```
 
 ### Python Environment Options
 
@@ -48,7 +64,7 @@ The setup script supports multiple Python environment options:
 1. **System Python**: Uses the Python installation in your system PATH.
 2. **Miniconda/Anaconda**: Uses a Python environment from Miniconda/Anaconda (recommended for users integrating with Blender via Claude Desktop).
 3. **Claude Desktop Environment**: Uses the Python environment bundled with Claude Desktop (if available).
-4. **Custom Python Path**: Allows you to specify a custom Python executable path.
+4. **Cursor Environment**: Uses the Python environment bundled with Cursor (if available).
 
 ## Manual Configuration
 
@@ -96,25 +112,49 @@ Add or update it with the following content, replacing the path with the actual 
 }
 ```
 
+### 4. Configure Cursor
+
+Locate or create the Cursor settings file at:
+
+```
+%APPDATA%\Cursor\User\settings.json
+```
+
+Add or update it with the following MCP configuration, replacing the path with the actual location of your `run_unreal_mcp.bat`:
+
+```json
+{
+    "mcp": {
+        "enabled": true,
+        "servers": {
+            "unreal": {
+                "command": "C:\\Path\\To\\Your\\Plugins\\UnrealMCP\\MCP\\run_unreal_mcp.bat",
+                "args": []
+            }
+        }
+    }
+}
+```
+
 ## Troubleshooting
 
 ### Common Issues
 
 1. **"No module named 'mcp'"**
-   - **Cause**: The `mcp` package isn’t installed in the Python environment used by Claude Desktop.
+   - **Cause**: The `mcp` package isn't installed in the Python environment used by Claude Desktop or Cursor.
    - **Solution**: Rerun the `setup_unreal_mcp.bat` script and select the correct Python environment.
 
 2. **Connection refused errors**
-   - **Cause**: The MCP server isn’t running or isn’t listening on port 13377.
+   - **Cause**: The MCP server isn't running or isn't listening on port 13377.
    - **Solution**:
      - Ensure Unreal Engine is running with the MCP plugin enabled.
-     - Confirm the MCP plugin’s port setting matches the default (13377).
+     - Confirm the MCP plugin's port setting matches the default (13377).
 
-3. **Claude Desktop can’t start the MCP server**
+3. **Claude Desktop or Cursor can't start the MCP server**
    - **Cause**: Configuration or file path issues.
    - **Solution**:
-     - Check the logs at: `%APPDATA%\Claude\logs\mcp-server-unreal.log`
-     - Verify the path in `claude_desktop_config.json` is correct.
+     - For Claude: Check the logs at: `%APPDATA%\Claude\logs\mcp-server-unreal.log`
+     - Verify the path in the configuration file is correct.
      - Ensure `run_unreal_mcp.bat` exists and references the correct Python interpreter.
 
 ### Checking Logs
@@ -132,8 +172,8 @@ Review this file for detailed error messages.
 To use the MCP interface:
 
 1. Launch your Unreal Engine project with the MCP plugin enabled.
-2. Open Claude Desktop.
-3. Use natural language commands in Claude Desktop, such as:
+2. Open Claude Desktop or Cursor.
+3. Use natural language commands in your AI assistant, such as:
    - "Show me what's in the current Unreal scene"
    - "Create a cube at position [0, 0, 100]"
    - "Modify the object named 'Cube_1' to have scale [2, 2, 2]"
@@ -150,7 +190,7 @@ The MCP interface supports these commands:
 
 ## Testing the MCP Server Directly
 
-To test the MCP server independently of Claude Desktop:
+To test the MCP server independently of Claude Desktop or Cursor:
 
 1. Run the following script:
    ```

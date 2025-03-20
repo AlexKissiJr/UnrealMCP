@@ -14,6 +14,51 @@ REM Set paths for local environment
 set "ENV_DIR=%SCRIPT_DIR%\python_env"
 set "MODULES_DIR=%SCRIPT_DIR%\python_modules"
 
+REM Parse command line arguments
+set "CONFIGURE_CLAUDE=0"
+set "CONFIGURE_CURSOR=0"
+
+:parse_args
+if "%1"=="" goto :done_parsing
+if /i "%1"=="--help" (
+    echo Usage: setup_unreal_mcp.bat [OPTIONS]
+    echo.
+    echo Options:
+    echo   --help                 Show this help message
+    echo   --configure-claude     Configure Claude Desktop (default)
+    echo   --configure-cursor     Configure Cursor
+    echo   --configure-both       Configure both Claude and Cursor
+    echo   --skip-config          Skip configuration
+    echo.
+    goto :end
+)
+if /i "%1"=="--configure-claude" set "CONFIGURE_CLAUDE=1" & set "CONFIGURE_CURSOR=0" & shift & goto :parse_args
+if /i "%1"=="--configure-cursor" set "CONFIGURE_CLAUDE=0" & set "CONFIGURE_CURSOR=1" & shift & goto :parse_args
+if /i "%1"=="--configure-both" set "CONFIGURE_CLAUDE=1" & set "CONFIGURE_CURSOR=1" & shift & goto :parse_args
+if /i "%1"=="--skip-config" set "CONFIGURE_CLAUDE=0" & set "CONFIGURE_CURSOR=0" & shift & goto :parse_args
+shift
+goto :parse_args
+:done_parsing
+
+REM If no config option was specified, show the assistant choice menu first
+if "%CONFIGURE_CLAUDE%"=="0" if "%CONFIGURE_CURSOR%"=="0" (
+    echo Which AI assistant would you like to configure?
+    echo.
+    echo 1. Claude Desktop
+    echo 2. Cursor
+    echo 3. Both Claude Desktop and Cursor
+    echo 4. Skip AI assistant configuration
+    echo.
+    
+    set /p AI_CHOICE="Enter choice (1-4): "
+    echo.
+    
+    if "!AI_CHOICE!"=="1" set "CONFIGURE_CLAUDE=1" & set "CONFIGURE_CURSOR=0"
+    if "!AI_CHOICE!"=="2" set "CONFIGURE_CLAUDE=0" & set "CONFIGURE_CURSOR=1"
+    if "!AI_CHOICE!"=="3" set "CONFIGURE_CLAUDE=1" & set "CONFIGURE_CURSOR=1"
+    if "!AI_CHOICE!"=="4" set "CONFIGURE_CLAUDE=0" & set "CONFIGURE_CURSOR=0"
+)
+
 echo Setting up Python environment in: %ENV_DIR%
 echo.
 
@@ -31,7 +76,7 @@ for /f "tokens=*" %%i in ('where python') do set SYSTEM_PYTHON=%%i
 echo Detected %PYTHON_VERSION% at %SYSTEM_PYTHON%
 echo.
 
-REM Create directories if they don’t exist
+REM Create directories if they don't exist
 if not exist "%ENV_DIR%" (
     echo Creating Python environment directory...
     mkdir "%ENV_DIR%"
@@ -49,7 +94,7 @@ if %ERRORLEVEL% neq 0 (
     python -m pip install virtualenv
 )
 
-REM Create virtual environment if it doesn’t exist
+REM Create virtual environment if it doesn't exist
 if not exist "%ENV_DIR%\Scripts\python.exe" (
     echo Creating virtual environment...
     python -m virtualenv "%ENV_DIR%"
@@ -80,16 +125,6 @@ REM Verify installation
 echo.
 echo Verifying MCP installation...
 python -c "import mcp; print(f'MCP package installed successfully. Version: {getattr(mcp, \"__version__\", \"unknown\")}')"
-
-REM Set configuration file path
-set "CLAUDE_CONFIG_DIR=%APPDATA%\Claude"
-set "CLAUDE_CONFIG_FILE=%CLAUDE_CONFIG_DIR%\claude_desktop_config.json"
-
-REM Create Claude config directory if it doesn’t exist
-if not exist "%CLAUDE_CONFIG_DIR%" (
-    mkdir "%CLAUDE_CONFIG_DIR%"
-    echo Created Claude configuration directory.
-)
 
 REM Create the run script
 echo.
@@ -124,23 +159,69 @@ echo.
 echo :end
 ) > "%SCRIPT_DIR%\run_unreal_mcp.bat"
 
-REM Update Claude Desktop configuration using Python
-echo.
-echo Updating Claude Desktop configuration...
-python temp_update_config.py "%CLAUDE_CONFIG_FILE%" "%SCRIPT_DIR%\run_unreal_mcp.bat"
-if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to update Claude Desktop configuration.
-    goto :end
+REM Configure Claude Desktop if requested
+if "%CONFIGURE_CLAUDE%"=="1" (
+    set "CLAUDE_CONFIG_DIR=%APPDATA%\Claude"
+    set "CLAUDE_CONFIG_FILE=%CLAUDE_CONFIG_DIR%\claude_desktop_config.json"
+
+    REM Check if Claude Desktop is installed
+    if not exist "%CLAUDE_CONFIG_DIR%" (
+        echo Creating Claude configuration directory...
+        mkdir "%CLAUDE_CONFIG_DIR%"
+    )
+
+    REM Update Claude Desktop configuration using Python
+    echo.
+    echo Updating Claude Desktop configuration...
+    python "%SCRIPT_DIR%\temp_update_config.py" "%CLAUDE_CONFIG_FILE%" "%SCRIPT_DIR%\run_unreal_mcp.bat"
+    if %ERRORLEVEL% neq 0 (
+        echo WARNING: Failed to update Claude Desktop configuration. Claude Desktop may not be installed.
+    ) else (
+        echo Claude Desktop configuration updated at: %CLAUDE_CONFIG_FILE%
+    )
 )
-echo Claude Desktop configuration updated at: %CLAUDE_CONFIG_FILE%
+
+REM Configure Cursor if requested
+if "%CONFIGURE_CURSOR%"=="1" (
+    echo.
+    echo Updating Cursor configuration...
+    python "%SCRIPT_DIR%\cursor_setup.py" --script "%SCRIPT_DIR%\run_unreal_mcp.bat"
+    if %ERRORLEVEL% neq 0 (
+        echo WARNING: Failed to update Cursor configuration. Cursor may not be installed.
+    ) else (
+        echo Cursor configuration updated successfully!
+    )
+)
 
 echo.
 echo ========================================================
 echo Setup complete!
 echo.
-echo To use with Claude Desktop:
-echo 1. Run run_unreal_mcp.bat to start the MCP bridge
-echo 2. Open Claude Desktop and it should automatically use the correct configuration
+
+if "%CONFIGURE_CLAUDE%"=="1" if "%CONFIGURE_CURSOR%"=="0" (
+    echo To use with Claude Desktop:
+    echo 1. Run run_unreal_mcp.bat to start the MCP bridge
+    echo 2. Open Claude Desktop and it should automatically use the correct configuration
+) else if "%CONFIGURE_CLAUDE%"=="0" if "%CONFIGURE_CURSOR%"=="1" (
+    echo To use with Cursor:
+    echo 1. Run run_unreal_mcp.bat to start the MCP bridge
+    echo 2. Open Cursor and it should automatically use the UnrealMCP tools
+) else if "%CONFIGURE_CLAUDE%"=="1" if "%CONFIGURE_CURSOR%"=="1" (
+    echo To use with Claude Desktop:
+    echo 1. Run run_unreal_mcp.bat to start the MCP bridge
+    echo 2. Open Claude Desktop and it should automatically use the correct configuration
+    echo.
+    echo To use with Cursor:
+    echo 1. Run run_unreal_mcp.bat to start the MCP bridge
+    echo 2. Open Cursor and it should automatically use the UnrealMCP tools
+) else (
+    echo No AI assistant configurations were applied.
+    echo To configure an assistant, run this script again with one of these options:
+    echo   --configure-claude     Configure Claude Desktop
+    echo   --configure-cursor     Configure Cursor
+    echo   --configure-both       Configure both Claude and Cursor
+)
+
 echo ========================================================
 echo.
 echo Press any key to exit...
