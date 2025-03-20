@@ -1,4 +1,5 @@
 # UnrealMCP Plugin
+[![smithery badge](https://smithery.ai/badge/@AlexKissiJr/unrealmcp)](https://smithery.ai/server/@AlexKissiJr/unrealmcp)
 
 # VERY WIP REPO
 I'm working on adding more tools now and cleaning up the codebase, 
@@ -82,6 +83,14 @@ If you want to use UnrealMCP with Cursor, follow these simple steps:
 That's it! The setup script will automatically configure everything needed for Cursor integration.
 
 ## Installation
+
+### Installing via Smithery
+
+To install unrealmcp for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@AlexKissiJr/unrealmcp):
+
+```bash
+npx -y @smithery/cli install @AlexKissiJr/unrealmcp --client claude
+```
 
 1. Clone or download this repository as a zip
 2. Create a new Unreal Project, or open an existing one
