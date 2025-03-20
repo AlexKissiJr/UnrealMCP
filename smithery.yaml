@@ -1,0 +1,36 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    properties:
+      mcpPort:
+        type: number
+        default: 13377
+        description: Port for the MCP server to listen on
+      bufferSize:
+        type: number
+        default: 65536
+        description: Buffer size for receiving data
+      timeout:
+        type: number
+        default: 10
+        description: Timeout in seconds for network operations
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({
+      command: 'python',
+      args: ['-u', 'MCP/unreal_mcp_bridge.py'],
+      env: {
+        MCP_PORT: config.mcpPort ? config.mcpPort.toString() : '13377',
+        MCP_BUFFER_SIZE: config.bufferSize ? config.bufferSize.toString() : '65536',
+        MCP_TIMEOUT: config.timeout ? config.timeout.toString() : '10'
+      }
+    })
+  exampleConfig:
+    mcpPort: 13377
+    bufferSize: 65536
+    timeout: 10
